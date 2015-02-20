@@ -4,27 +4,12 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="VendorEdiModel.Store" Provider="System.Data.SQLite.EF6" ProviderManifestToken="ISO8601" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
-        <!--Errors Found During Generation:
-warning 6002: The table/view 'main.AccountsPayable' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.-->
+    <Schema Namespace="VendorEdiModel.Store" Provider="System.Data.SQLite.EF6" ProviderManifestToken="ISO8601" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="AccountsPayable">
           <Key>
-            <PropertyRef Name="VendorName" />
-            <PropertyRef Name="VendorNumber" />
-            <PropertyRef Name="CheckNumber" />
-            <PropertyRef Name="BatchNumber" />
-            <PropertyRef Name="OrderNumber" />
-            <PropertyRef Name="VendorOrderInvoiceNumber" />
-            <PropertyRef Name="SknId" />
-            <PropertyRef Name="VendorSkuCode" />
-            <PropertyRef Name="UnitsShipped" />
-            <PropertyRef Name="VendorItemCost" />
-            <PropertyRef Name="VendorShippingCost" />
-            <PropertyRef Name="VendorHandlingCost" />
-            <PropertyRef Name="ItemCost" />
-            <PropertyRef Name="TotalCost" />
-            <PropertyRef Name="VendorTotalCost" />
+            <PropertyRef Name="Id" />
           </Key>
+          <Property Name="Id" Type="integer" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="VendorName" Type="varchar" MaxLength="64" Nullable="false" />
           <Property Name="VendorNumber" Type="varchar" MaxLength="32" Nullable="false" />
           <Property Name="CheckNumber" Type="varchar" MaxLength="16" Nullable="false" />
@@ -42,57 +27,28 @@ warning 6002: The table/view 'main.AccountsPayable' does not have a primary key 
           <Property Name="VendorTotalCost" Type="integer" Nullable="false" />
         </EntityType>
         <EntityContainer Name="VendorEdiModelStoreContainer">
-          <EntitySet Name="AccountsPayable" EntityType="Self.AccountsPayable" store:Type="Tables">
-            <DefiningQuery>SELECT 
-[AccountsPayable].[VendorName] AS [VendorName], 
-[AccountsPayable].[VendorNumber] AS [VendorNumber], 
-[AccountsPayable].[CheckNumber] AS [CheckNumber], 
-[AccountsPayable].[BatchNumber] AS [BatchNumber], 
-[AccountsPayable].[OrderNumber] AS [OrderNumber], 
-[AccountsPayable].[VendorOrderInvoiceNumber] AS [VendorOrderInvoiceNumber], 
-[AccountsPayable].[SknId] AS [SknId], 
-[AccountsPayable].[VendorSkuCode] AS [VendorSkuCode], 
-[AccountsPayable].[UnitsShipped] AS [UnitsShipped], 
-[AccountsPayable].[VendorItemCost] AS [VendorItemCost], 
-[AccountsPayable].[VendorShippingCost] AS [VendorShippingCost], 
-[AccountsPayable].[VendorHandlingCost] AS [VendorHandlingCost], 
-[AccountsPayable].[ItemCost] AS [ItemCost], 
-[AccountsPayable].[TotalCost] AS [TotalCost], 
-[AccountsPayable].[VendorTotalCost] AS [VendorTotalCost]
-FROM [AccountsPayable] AS [AccountsPayable]</DefiningQuery>
-          </EntitySet>
+          <EntitySet Name="AccountsPayable" EntityType="Self.AccountsPayable" store:Type="Tables" />
         </EntityContainer>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="VendorEdiModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityContainer Name="VendorEdiEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="AccountsPayable" EntityType="VendorEdiModel.AccountsPayable" />
+        </EntityContainer>
         <EntityType Name="AccountsPayable">
           <Key>
-            <PropertyRef Name="VendorName" />
-            <PropertyRef Name="VendorNumber" />
-            <PropertyRef Name="CheckNumber" />
-            <PropertyRef Name="BatchNumber" />
-            <PropertyRef Name="OrderNumber" />
-            <PropertyRef Name="VendorOrderInvoiceNumber" />
-            <PropertyRef Name="SknId" />
-            <PropertyRef Name="VendorSkuCode" />
-            <PropertyRef Name="UnitsShipped" />
-            <PropertyRef Name="VendorItemCost" />
-            <PropertyRef Name="VendorShippingCost" />
-            <PropertyRef Name="VendorHandlingCost" />
-            <PropertyRef Name="ItemCost" />
-            <PropertyRef Name="TotalCost" />
-            <PropertyRef Name="VendorTotalCost" />
+            <PropertyRef Name="Id" />
           </Key>
-          <Property Name="VendorName" Type="String" MaxLength="64" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="VendorNumber" Type="String" MaxLength="32" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="CheckNumber" Type="String" MaxLength="16" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="BatchNumber" Type="String" MaxLength="16" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="OrderNumber" Type="String" MaxLength="32" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="VendorOrderInvoiceNumber" Type="String" MaxLength="32" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="SknId" Type="String" MaxLength="16" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="VendorSkuCode" Type="String" MaxLength="32" FixedLength="false" Unicode="false" Nullable="false" />
+          <Property Name="Id" Type="Int64" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="VendorName" Type="String" Nullable="false" MaxLength="64" FixedLength="false" Unicode="false" />
+          <Property Name="VendorNumber" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
+          <Property Name="CheckNumber" Type="String" Nullable="false" MaxLength="16" FixedLength="false" Unicode="false" />
+          <Property Name="BatchNumber" Type="String" Nullable="false" MaxLength="16" FixedLength="false" Unicode="false" />
+          <Property Name="OrderNumber" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
+          <Property Name="VendorOrderInvoiceNumber" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
+          <Property Name="SknId" Type="String" Nullable="false" MaxLength="16" FixedLength="false" Unicode="false" />
+          <Property Name="VendorSkuCode" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
           <Property Name="UnitsShipped" Type="Int64" Nullable="false" />
           <Property Name="VendorItemCost" Type="Int64" Nullable="false" />
           <Property Name="VendorShippingCost" Type="Int64" Nullable="false" />
@@ -101,9 +57,6 @@ FROM [AccountsPayable] AS [AccountsPayable]</DefiningQuery>
           <Property Name="TotalCost" Type="Int64" Nullable="false" />
           <Property Name="VendorTotalCost" Type="Int64" Nullable="false" />
         </EntityType>
-        <EntityContainer Name="VendorEdiEntities" annotation:LazyLoadingEnabled="true">
-          <EntitySet Name="AccountsPayable" EntityType="Self.AccountsPayable" />
-        </EntityContainer>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -113,21 +66,22 @@ FROM [AccountsPayable] AS [AccountsPayable]</DefiningQuery>
           <EntitySetMapping Name="AccountsPayable">
             <EntityTypeMapping TypeName="VendorEdiModel.AccountsPayable">
               <MappingFragment StoreEntitySet="AccountsPayable">
-                <ScalarProperty Name="VendorName" ColumnName="VendorName" />
-                <ScalarProperty Name="VendorNumber" ColumnName="VendorNumber" />
-                <ScalarProperty Name="CheckNumber" ColumnName="CheckNumber" />
-                <ScalarProperty Name="BatchNumber" ColumnName="BatchNumber" />
-                <ScalarProperty Name="OrderNumber" ColumnName="OrderNumber" />
-                <ScalarProperty Name="VendorOrderInvoiceNumber" ColumnName="VendorOrderInvoiceNumber" />
-                <ScalarProperty Name="SknId" ColumnName="SknId" />
-                <ScalarProperty Name="VendorSkuCode" ColumnName="VendorSkuCode" />
-                <ScalarProperty Name="UnitsShipped" ColumnName="UnitsShipped" />
-                <ScalarProperty Name="VendorItemCost" ColumnName="VendorItemCost" />
-                <ScalarProperty Name="VendorShippingCost" ColumnName="VendorShippingCost" />
-                <ScalarProperty Name="VendorHandlingCost" ColumnName="VendorHandlingCost" />
-                <ScalarProperty Name="ItemCost" ColumnName="ItemCost" />
-                <ScalarProperty Name="TotalCost" ColumnName="TotalCost" />
                 <ScalarProperty Name="VendorTotalCost" ColumnName="VendorTotalCost" />
+                <ScalarProperty Name="TotalCost" ColumnName="TotalCost" />
+                <ScalarProperty Name="ItemCost" ColumnName="ItemCost" />
+                <ScalarProperty Name="VendorHandlingCost" ColumnName="VendorHandlingCost" />
+                <ScalarProperty Name="VendorShippingCost" ColumnName="VendorShippingCost" />
+                <ScalarProperty Name="VendorItemCost" ColumnName="VendorItemCost" />
+                <ScalarProperty Name="UnitsShipped" ColumnName="UnitsShipped" />
+                <ScalarProperty Name="VendorSkuCode" ColumnName="VendorSkuCode" />
+                <ScalarProperty Name="SknId" ColumnName="SknId" />
+                <ScalarProperty Name="VendorOrderInvoiceNumber" ColumnName="VendorOrderInvoiceNumber" />
+                <ScalarProperty Name="OrderNumber" ColumnName="OrderNumber" />
+                <ScalarProperty Name="BatchNumber" ColumnName="BatchNumber" />
+                <ScalarProperty Name="CheckNumber" ColumnName="CheckNumber" />
+                <ScalarProperty Name="VendorNumber" ColumnName="VendorNumber" />
+                <ScalarProperty Name="VendorName" ColumnName="VendorName" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

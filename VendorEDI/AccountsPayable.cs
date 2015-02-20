@@ -14,6 +14,7 @@ namespace VendorEDI
     
     public partial class AccountsPayable
     {
+        public long Id { get; set; }
         public string VendorName { get; set; }
         public string VendorNumber { get; set; }
         public string CheckNumber { get; set; }

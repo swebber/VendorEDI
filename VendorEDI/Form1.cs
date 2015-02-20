@@ -92,7 +92,6 @@ namespace VendorEDI
                 }
 
                 db.Initialize(fileName);
-                // string csvName = FileUtilities.CleanFile(fileName);
             }
         }
 
