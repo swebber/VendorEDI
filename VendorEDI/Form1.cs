@@ -89,6 +89,8 @@ namespace VendorEDI
                     e.Cancel = true;
                     return;
                 }
+
+                string csvName = FileUtilities.CleanFile(fileName);
             }
         }
 
