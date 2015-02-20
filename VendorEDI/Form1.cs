@@ -80,6 +80,7 @@ namespace VendorEDI
         {
             EnableBtnDone(false);
 
+            var db = new DbUtilities();
             var worker = sender as BackgroundWorker;
 
             foreach (var fileName in ediFiles)
@@ -90,7 +91,8 @@ namespace VendorEDI
                     return;
                 }
 
-                string csvName = FileUtilities.CleanFile(fileName);
+                db.Initialize(fileName);
+                // string csvName = FileUtilities.CleanFile(fileName);
             }
         }
 
