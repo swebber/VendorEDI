@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ClosedXML.Excel;
+using System;
 using System.Collections.Generic;
 using System.Data.Entity.Core.EntityClient;
 using System.Data.SQLite;
@@ -21,6 +22,7 @@ namespace VendorEDI
         private string dbFile;
         private string connStr;
         private string entityConnStr;
+        private readonly string fileDate = DateTime.Now.ToString("yyyyMMddHHmmss");
 
         private string GetEntityConnectionString()
         {
@@ -57,6 +59,11 @@ namespace VendorEDI
             return result;
         }
 
+        private decimal FromMoney(long value)
+        {
+            return (decimal)value / 100m;
+        }
+
         public bool Initialize(string fileName)
         {
             try
@@ -65,6 +72,8 @@ namespace VendorEDI
                 dbFile = string.Format("{0}\\{1}", dbPath, DB_FILENAME);
                 connStr = string.Format(@"Data Source={0};Version=3;", dbFile);
                 entityConnStr = GetEntityConnectionString();
+
+                return true; ;
 
                 SQLiteConnection.CreateFile(dbFile);
 
@@ -163,7 +172,61 @@ namespace VendorEDI
 
         public void ReportMissing()
         {
+            var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Accounts Payable");
 
+            var titles = new List<string> { "VENDOR NAME", "VENDOR #", "CHECK #", "BATCH #", "ORDER #", 
+                "VNDR ORD/INV NBR", "QVC SKN ID", "VENDOR SKU CODE", "UNITS SHIPD", "VNDR ITEM COST", 
+                "VNDR SHPG COST", "VNDR HDLG COST", "QVC ITEM COST", "QVC TOTAL COST", "VNDR TOTAL COST" };
+
+            int colIndex = 0;
+            foreach (var item in titles)
+            {
+                ws.Cell(1, ++colIndex).Value = item;
+            }
+            ws.Range(1, 1, 1, colIndex).AddToNamed("titles");
+
+            int rowIndex = 1;
+            using (var db = new VendorEdiEntities(entityConnStr))
+            {
+                var accountsPayableList = db.AccountsPayable.Where(p => p.IsProcessed == false);
+
+                foreach (var item in accountsPayableList)
+                {
+                    ++rowIndex;
+                    colIndex = 0;
+
+                    ws.Cell(rowIndex, ++colIndex).SetValue(item.VendorName);
+                    ws.Cell(rowIndex, ++colIndex).SetValue(item.VendorNumber);
+                    ws.Cell(rowIndex, ++colIndex).SetValue(item.CheckNumber);
+                    ws.Cell(rowIndex, ++colIndex).SetValue(item.BatchNumber);
+                    ws.Cell(rowIndex, ++colIndex).SetValue(item.OrderNumber);
+                    ws.Cell(rowIndex, ++colIndex).SetValue(item.VendorOrderInvoiceNumber);
+                    ws.Cell(rowIndex, ++colIndex).SetValue(item.SknId);
+                    ws.Cell(rowIndex, ++colIndex).SetValue(item.VendorSkuCode);
+                    
+                    ws.Cell(rowIndex, ++colIndex).Value = item.UnitsShipped;
+                    ws.Cell(rowIndex, ++colIndex).Value = FromMoney(item.VendorItemCost);
+                    ws.Cell(rowIndex, ++colIndex).Value = FromMoney(item.VendorShippingCost);
+                    ws.Cell(rowIndex, ++colIndex).Value = FromMoney(item.VendorHandlingCost);
+                    ws.Cell(rowIndex, ++colIndex).Value = FromMoney(item.ItemCost);
+                    ws.Cell(rowIndex, ++colIndex).Value = FromMoney(item.TotalCost);
+                    ws.Cell(rowIndex, ++colIndex).Value = FromMoney(item.VendorTotalCost);
+                }
+            }
+
+            ws.Range(2, 10, rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+
+            // Prepare the style for the titles
+            var titlesStyle = wb.Style;
+            titlesStyle.Font.Bold = true;
+            titlesStyle.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // Format all titles in one shot
+            wb.NamedRanges.NamedRange("titles").Ranges.Style = titlesStyle;
+
+            ws.Columns().AdjustToContents();
+            wb.SaveAs(string.Format("{0}\\{1}_{2}.xlsx", dbPath, AppSettings.Get<string>("omitted.file.name"), fileDate));
         }
     }
 }
