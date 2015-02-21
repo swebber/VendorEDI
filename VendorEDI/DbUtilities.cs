@@ -22,6 +22,41 @@ namespace VendorEDI
         private string connStr;
         private string entityConnStr;
 
+        private string GetEntityConnectionString()
+        {
+            string originalConnectionString = System.Configuration.ConfigurationManager.ConnectionStrings["VendorEdiEntities"].ConnectionString;
+            var ecsBuilder = new EntityConnectionStringBuilder(originalConnectionString);
+            var sqlCsBuilder = new SQLiteConnectionStringBuilder(ecsBuilder.ProviderConnectionString)
+            {
+                DataSource = dbFile
+            };
+            var providerConnectionString = sqlCsBuilder.ToString();
+            ecsBuilder.ProviderConnectionString = providerConnectionString;
+
+            return ecsBuilder.ToString();
+        }
+
+        private int ToInteger(string value)
+        {
+            int result = 0;
+            int.TryParse(value, out result);
+            return result;
+        }
+
+        private int ToMoney(string value)
+        {
+            int result = 0;
+
+            decimal amount = 0m;
+            if (decimal.TryParse(value, out amount))
+            {
+                amount *= 100m;
+                result = (int)amount;
+            }
+
+            return result;
+        }
+
         public bool Initialize(string fileName)
         {
             try
@@ -39,7 +74,8 @@ namespace VendorEDI
 
                     // string sql = "CREATE TABLE IF NOT EXISTS \"AccountsPayable\" (\"VendorName\" VARCHAR(64) NOT NULL , \"VendorNumber\" VARCHAR(32) NOT NULL , \"CheckNumber\" VARCHAR(16) NOT NULL , \"BatchNumber\" VARCHAR(16) NOT NULL , \"OrderNumber\" VARCHAR(32) NOT NULL , \"VendorOrderInvoiceNumber\" VARCHAR(32) NOT NULL , \"SknId\" VARCHAR(16) NOT NULL , \"VendorSkuCode\" VARCHAR(32) NOT NULL , \"UnitsShipped\" INTEGER NOT NULL DEFAULT 0, \"VendorItemCost\" INTEGER NOT NULL DEFAULT 0, \"VendorShippingCost\" INTEGER NOT NULL DEFAULT 0, \"VendorHandlingCost\" INTEGER NOT NULL DEFAULT 0, \"ItemCost\" INTEGER NOT NULL DEFAULT 0, \"TotalCost\" INTEGER NOT NULL DEFAULT 0, \"VendorTotalCost\" INTEGER NOT NULL DEFAULT 0)";
                     // string sql = "CREATE TABLE \"main\".\"AccountsPayable\" (\"Id\" INTEGER PRIMARY KEY NOT NULL, \"VendorName\" VARCHAR(64) NOT NULL , \"VendorNumber\" VARCHAR(32) NOT NULL , \"CheckNumber\" VARCHAR(16) NOT NULL , \"BatchNumber\" VARCHAR(16) NOT NULL , \"OrderNumber\" VARCHAR(32) NOT NULL , \"VendorOrderInvoiceNumber\" VARCHAR(32) NOT NULL , \"SknId\" VARCHAR(16) NOT NULL , \"VendorSkuCode\" VARCHAR(32) NOT NULL , \"UnitsShipped\" INTEGER NOT NULL DEFAULT 0, \"VendorItemCost\" INTEGER NOT NULL DEFAULT 0, \"VendorShippingCost\" INTEGER NOT NULL DEFAULT 0, \"VendorHandlingCost\" INTEGER NOT NULL DEFAULT 0, \"ItemCost\" INTEGER NOT NULL DEFAULT 0, \"TotalCost\" INTEGER NOT NULL DEFAULT 0, \"VendorTotalCost\" INTEGER NOT NULL DEFAULT 0)";
-                    string sql = "CREATE TABLE \"main\".\"AccountsPayable\" (\"Id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"VendorName\" VARCHAR(64) NOT NULL , \"VendorNumber\" VARCHAR(32) NOT NULL , \"CheckNumber\" VARCHAR(16) NOT NULL , \"BatchNumber\" VARCHAR(16) NOT NULL , \"OrderNumber\" VARCHAR(32) NOT NULL , \"VendorOrderInvoiceNumber\" VARCHAR(32) NOT NULL , \"SknId\" VARCHAR(16) NOT NULL , \"VendorSkuCode\" VARCHAR(32) NOT NULL , \"UnitsShipped\" INTEGER NOT NULL DEFAULT 0, \"VendorItemCost\" INTEGER NOT NULL DEFAULT 0, \"VendorShippingCost\" INTEGER NOT NULL DEFAULT 0, \"VendorHandlingCost\" INTEGER NOT NULL DEFAULT 0, \"ItemCost\" INTEGER NOT NULL DEFAULT 0, \"TotalCost\" INTEGER NOT NULL DEFAULT 0, \"VendorTotalCost\" INTEGER NOT NULL DEFAULT 0)";
+                    // string sql = "CREATE TABLE \"main\".\"AccountsPayable\" (\"Id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"VendorName\" VARCHAR(64) NOT NULL , \"VendorNumber\" VARCHAR(32) NOT NULL , \"CheckNumber\" VARCHAR(16) NOT NULL , \"BatchNumber\" VARCHAR(16) NOT NULL , \"OrderNumber\" VARCHAR(32) NOT NULL , \"VendorOrderInvoiceNumber\" VARCHAR(32) NOT NULL , \"SknId\" VARCHAR(16) NOT NULL , \"VendorSkuCode\" VARCHAR(32) NOT NULL , \"UnitsShipped\" INTEGER NOT NULL DEFAULT 0, \"VendorItemCost\" INTEGER NOT NULL DEFAULT 0, \"VendorShippingCost\" INTEGER NOT NULL DEFAULT 0, \"VendorHandlingCost\" INTEGER NOT NULL DEFAULT 0, \"ItemCost\" INTEGER NOT NULL DEFAULT 0, \"TotalCost\" INTEGER NOT NULL DEFAULT 0, \"VendorTotalCost\" INTEGER NOT NULL DEFAULT 0)";
+                    string sql = "CREATE TABLE \"main\".\"AccountsPayable\" (\"Id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"VendorName\" VARCHAR(64) NOT NULL , \"VendorNumber\" VARCHAR(32) NOT NULL , \"CheckNumber\" VARCHAR(16) NOT NULL , \"BatchNumber\" VARCHAR(16) NOT NULL , \"OrderNumber\" VARCHAR(32) NOT NULL , \"VendorOrderInvoiceNumber\" VARCHAR(32) NOT NULL , \"SknId\" VARCHAR(16) NOT NULL , \"VendorSkuCode\" VARCHAR(32) NOT NULL , \"UnitsShipped\" INTEGER NOT NULL DEFAULT 0, \"VendorItemCost\" INTEGER NOT NULL DEFAULT 0, \"VendorShippingCost\" INTEGER NOT NULL DEFAULT 0, \"VendorHandlingCost\" INTEGER NOT NULL DEFAULT 0, \"ItemCost\" INTEGER NOT NULL DEFAULT 0, \"TotalCost\" INTEGER NOT NULL DEFAULT 0, \"VendorTotalCost\" INTEGER NOT NULL DEFAULT 0, \"IsProcessed\" BOOLEAN NOT NULL DEFAULT 0)";
                     using (var cmd = new SQLiteCommand(sql, conn))
                     {
                         cmd.ExecuteNonQuery();
@@ -87,13 +123,14 @@ namespace VendorEDI
                                 VendorOrderInvoiceNumber = payableItem[5],
                                 SknId = payableItem[6],
                                 VendorSkuCode = payableItem[7],
-                                UnitsShipped = 0,
-                                VendorItemCost = 0,
-                                VendorShippingCost = 0,
-                                VendorHandlingCost = 0,
-                                ItemCost = 0,
-                                TotalCost = 0,
-                                VendorTotalCost = 0
+                                UnitsShipped = ToInteger(payableItem[8]),
+                                VendorItemCost = ToMoney(payableItem[9]),
+                                VendorShippingCost = ToMoney(payableItem[10]),
+                                VendorHandlingCost = ToMoney(payableItem[11]),
+                                ItemCost = ToMoney(payableItem[12]),
+                                TotalCost = ToMoney(payableItem[13]),
+                                VendorTotalCost = ToMoney(payableItem[14]),
+                                IsProcessed = false
                             };
 
                             db.AccountsPayable.Add(ap);
@@ -124,18 +161,9 @@ namespace VendorEDI
             }
         }
 
-        private string GetEntityConnectionString()
+        public void ReportMissing()
         {
-            string originalConnectionString = System.Configuration.ConfigurationManager.ConnectionStrings["VendorEdiEntities"].ConnectionString;
-            var ecsBuilder = new EntityConnectionStringBuilder(originalConnectionString);
-            var sqlCsBuilder = new SQLiteConnectionStringBuilder(ecsBuilder.ProviderConnectionString)
-            {
-                DataSource = dbFile
-            };
-            var providerConnectionString = sqlCsBuilder.ToString();
-            ecsBuilder.ProviderConnectionString = providerConnectionString;
 
-            return ecsBuilder.ToString();
         }
     }
 }

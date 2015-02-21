@@ -25,6 +25,7 @@
           <Property Name="ItemCost" Type="integer" Nullable="false" />
           <Property Name="TotalCost" Type="integer" Nullable="false" />
           <Property Name="VendorTotalCost" Type="integer" Nullable="false" />
+          <Property Name="IsProcessed" Type="bit" Nullable="false" />
         </EntityType>
         <EntityContainer Name="VendorEdiModelStoreContainer">
           <EntitySet Name="AccountsPayable" EntityType="Self.AccountsPayable" store:Type="Tables" />
@@ -56,6 +57,7 @@
           <Property Name="ItemCost" Type="Int64" Nullable="false" />
           <Property Name="TotalCost" Type="Int64" Nullable="false" />
           <Property Name="VendorTotalCost" Type="Int64" Nullable="false" />
+          <Property Name="IsProcessed" Type="Boolean" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -66,6 +68,7 @@
           <EntitySetMapping Name="AccountsPayable">
             <EntityTypeMapping TypeName="VendorEdiModel.AccountsPayable">
               <MappingFragment StoreEntitySet="AccountsPayable">
+                <ScalarProperty Name="IsProcessed" ColumnName="IsProcessed" />
                 <ScalarProperty Name="VendorTotalCost" ColumnName="VendorTotalCost" />
                 <ScalarProperty Name="TotalCost" ColumnName="TotalCost" />
                 <ScalarProperty Name="ItemCost" ColumnName="ItemCost" />

@@ -30,5 +30,6 @@ namespace VendorEDI
         public long ItemCost { get; set; }
         public long TotalCost { get; set; }
         public long VendorTotalCost { get; set; }
+        public bool IsProcessed { get; set; }
     }
 }
