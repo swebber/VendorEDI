@@ -112,6 +112,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>VendorEdiModel.edmx</DependentUpon>
     </Compile>
+    <Compile Include="VendorItem.cs" />
+    <Compile Include="VendorItemMap.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

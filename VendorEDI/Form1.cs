@@ -92,7 +92,8 @@ namespace VendorEDI
                 }
 
                 db.Initialize(fileName);
-                db.ReportMissing();
+                db.ProcessVendors();
+                //db.ReportMissing();
             }
         }
 
