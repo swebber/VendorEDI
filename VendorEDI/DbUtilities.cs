@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace VendorEDI
 {
@@ -18,6 +19,7 @@ namespace VendorEDI
         private const int INSERT_COUNT_THRESHOLD = 100;
         private const string DB_FILENAME = "VendorEDI.sqlite";
         private static readonly string DATA_LEAD = AppSettings.Get<string>("data.lead");
+        private static readonly Regex rgx = new Regex("[^a-zA-Z0-9]");
 
         private string dbPath;
         private string dbFile;
@@ -37,6 +39,11 @@ namespace VendorEDI
             ecsBuilder.ProviderConnectionString = providerConnectionString;
 
             return ecsBuilder.ToString();
+        }
+
+        private string AlphaNumericOnly(string value)
+        {
+            return rgx.Replace(value, "");
         }
 
         private int ToInteger(string value)
@@ -81,7 +88,7 @@ namespace VendorEDI
             {
                 conn.Open();
 
-                string sql = "CREATE TABLE \"main\".\"AccountsPayable\" (\"Id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"VendorName\" VARCHAR(64) NOT NULL , \"VendorNumber\" VARCHAR(32) NOT NULL , \"CheckNumber\" VARCHAR(16) NOT NULL , \"BatchNumber\" VARCHAR(16) NOT NULL , \"OrderNumber\" VARCHAR(32) NOT NULL , \"VendorOrderInvoiceNumber\" VARCHAR(32) NOT NULL , \"SknId\" VARCHAR(16) NOT NULL , \"VendorSkuCode\" VARCHAR(32) NOT NULL , \"UnitsShipped\" INTEGER NOT NULL DEFAULT 0, \"VendorItemCost\" INTEGER NOT NULL DEFAULT 0, \"VendorShippingCost\" INTEGER NOT NULL DEFAULT 0, \"VendorHandlingCost\" INTEGER NOT NULL DEFAULT 0, \"ItemCost\" INTEGER NOT NULL DEFAULT 0, \"TotalCost\" INTEGER NOT NULL DEFAULT 0, \"VendorTotalCost\" INTEGER NOT NULL DEFAULT 0, \"IsProcessed\" BOOLEAN NOT NULL DEFAULT 0)";
+                string sql = "CREATE TABLE \"main\".\"AccountsPayable\" (\"Id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"VendorName\" VARCHAR(64) NOT NULL, \"VendorNumber\" VARCHAR(32) NOT NULL, \"CheckNumber\" VARCHAR(16) NOT NULL, \"BatchNumber\" VARCHAR(16) NOT NULL, \"OrderNumber\" VARCHAR(32) NOT NULL, \"VendorOrderInvoiceNumber\" VARCHAR(32) NOT NULL, \"SknId\" VARCHAR(16) NOT NULL, \"VendorSkuCode\" VARCHAR(32) NOT NULL, \"VendorSkuCodeClean\" VARCHAR(32) NOT NULL, \"UnitsShipped\" INTEGER NOT NULL DEFAULT 0, \"VendorItemCost\" INTEGER NOT NULL DEFAULT 0, \"VendorShippingCost\" INTEGER NOT NULL DEFAULT 0, \"VendorHandlingCost\" INTEGER NOT NULL DEFAULT 0, \"ItemCost\" INTEGER NOT NULL DEFAULT 0, \"TotalCost\" INTEGER NOT NULL DEFAULT 0, \"VendorTotalCost\" INTEGER NOT NULL DEFAULT 0, \"IsProcessed\" BOOLEAN NOT NULL DEFAULT 0)";
                 using (var cmd = new SQLiteCommand(sql, conn))
                 {
                     cmd.ExecuteNonQuery();
@@ -132,6 +139,7 @@ namespace VendorEDI
                             VendorOrderInvoiceNumber = payableItem[5],
                             SknId = payableItem[6],
                             VendorSkuCode = payableItem[7],
+                            VendorSkuCodeClean = AlphaNumericOnly(payableItem[7]),
                             UnitsShipped = ToInteger(payableItem[8]),
                             VendorItemCost = ToMoney(payableItem[9]),
                             VendorShippingCost = ToMoney(payableItem[10]),
@@ -249,7 +257,6 @@ namespace VendorEDI
 
         private void ProcessVendor(string fileName)
         {
-
             List<VendorItem> records;
 
             using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -261,11 +268,28 @@ namespace VendorEDI
                 records = csv.GetRecords<VendorItem>().ToList();
             }
 
+            // check for duplicate SKN IDs
+            foreach (var item in records)
+            {
+                var sknRecords = records.Where(r => r.Skn == item.Skn);
+                item.IsDuplicateSkn = (sknRecords.Count() > 1);
+            }
+
+            // calculate number of units shipped for each SKN or SKN + Vendor SKU depending of in the SKN is unique
             using (var db = new VendorEdiEntities(entityConnStr))
             {
                 foreach (var item in records)
                 {
-                    var units = db.AccountsPayable.Where(a => a.SknId == item.Skn);
+                    IQueryable<AccountsPayable> units = null;
+                    if (item.IsDuplicateSkn)
+                    {
+                        units = db.AccountsPayable.Where(r => r.SknId == item.Skn && r.VendorSkuCodeClean == AlphaNumericOnly(item.VendorSku));
+                    }
+                    else
+                    {
+                        units = db.AccountsPayable.Where(a => a.SknId == item.Skn);
+                    }
+
                     if ((units != null) && (units.Count() > 0))
                         item.UnitsShipped = units.Sum(a => a.UnitsShipped);
 

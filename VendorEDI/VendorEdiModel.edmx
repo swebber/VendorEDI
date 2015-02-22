@@ -18,6 +18,7 @@
           <Property Name="VendorOrderInvoiceNumber" Type="varchar" MaxLength="32" Nullable="false" />
           <Property Name="SknId" Type="varchar" MaxLength="16" Nullable="false" />
           <Property Name="VendorSkuCode" Type="varchar" MaxLength="32" Nullable="false" />
+          <Property Name="VendorSkuCodeClean" Type="varchar" MaxLength="32" Nullable="false" />
           <Property Name="UnitsShipped" Type="integer" Nullable="false" />
           <Property Name="VendorItemCost" Type="integer" Nullable="false" />
           <Property Name="VendorShippingCost" Type="integer" Nullable="false" />
@@ -50,6 +51,7 @@
           <Property Name="VendorOrderInvoiceNumber" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
           <Property Name="SknId" Type="String" Nullable="false" MaxLength="16" FixedLength="false" Unicode="false" />
           <Property Name="VendorSkuCode" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
+          <Property Name="VendorSkuCodeClean" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
           <Property Name="UnitsShipped" Type="Int64" Nullable="false" />
           <Property Name="VendorItemCost" Type="Int64" Nullable="false" />
           <Property Name="VendorShippingCost" Type="Int64" Nullable="false" />
@@ -76,6 +78,7 @@
                 <ScalarProperty Name="VendorShippingCost" ColumnName="VendorShippingCost" />
                 <ScalarProperty Name="VendorItemCost" ColumnName="VendorItemCost" />
                 <ScalarProperty Name="UnitsShipped" ColumnName="UnitsShipped" />
+                <ScalarProperty Name="VendorSkuCodeClean" ColumnName="VendorSkuCodeClean" />
                 <ScalarProperty Name="VendorSkuCode" ColumnName="VendorSkuCode" />
                 <ScalarProperty Name="SknId" ColumnName="SknId" />
                 <ScalarProperty Name="VendorOrderInvoiceNumber" ColumnName="VendorOrderInvoiceNumber" />

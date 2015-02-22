@@ -23,6 +23,7 @@ namespace VendorEDI
         public string VendorOrderInvoiceNumber { get; set; }
         public string SknId { get; set; }
         public string VendorSkuCode { get; set; }
+        public string VendorSkuCodeClean { get; set; }
         public long UnitsShipped { get; set; }
         public long VendorItemCost { get; set; }
         public long VendorShippingCost { get; set; }

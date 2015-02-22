@@ -14,5 +14,6 @@ namespace VendorEDI
         public decimal PaidToVendor { get; set; }
 
         public long UnitsShipped { get; set; }
+        public bool IsDuplicateSkn { get; set; }
     }
 }
