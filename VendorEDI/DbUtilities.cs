@@ -240,7 +240,7 @@ namespace VendorEDI
 
         public void ProcessVendors()
         {
-            var fileNames = Directory.EnumerateFiles(dbPath, AppSettings.Get<string>("vendor.file.filter"));
+            var fileNames = Directory.EnumerateFiles(dbPath, "*" + AppSettings.Get<string>("vendor.file.filter") + ".csv");
             foreach (var fileName in fileNames)
             {
                 ProcessVendor(fileName);
@@ -249,15 +249,16 @@ namespace VendorEDI
 
         private void ProcessVendor(string fileName)
         {
-            IEnumerable<VendorItem> records;
+
+            List<VendorItem> records;
 
             using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var reader = new StreamReader(stream))
+            using (TextReader reader = new StreamReader(stream))
             {
                 var csv = new CsvReader(reader);
                 csv.Configuration.HasHeaderRecord = true;
                 csv.Configuration.RegisterClassMap<VendorItemMap>();
-                records = csv.GetRecords<VendorItem>();
+                records = csv.GetRecords<VendorItem>().ToList();
             }
 
             using (var db = new VendorEdiEntities(entityConnStr))
@@ -274,6 +275,66 @@ namespace VendorEDI
                     db.SaveChanges();
                 }
             }
+
+            string vendor = Path.GetFileNameWithoutExtension(fileName).Replace(AppSettings.Get<string>("vendor.file.filter"), "");
+
+            var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet(vendor);
+
+            // date
+            ws.Cell(1, 1).Value = "Date:";
+            ws.Cell(1, 1).Style.Font.Bold = true;
+
+            ws.Cell(1, 2).Value = DateTime.Now;
+            ws.Cell(1, 2).DataType = XLCellValues.DateTime;
+            ws.Cell(1, 2).Style.DateFormat.Format = "MM/dd/yyyy";
+
+            // vendor
+            ws.Cell(2, 1).Value = "Vendor:";
+            ws.Cell(2, 1).Style.Font.Bold = true;
+
+            ws.Cell(2, 2).Value = vendor;
+
+            // column headers
+            int colIndex = 0;
+            var headers = new List<string> { "SKN#", "VENDOR SKU", "DESCRIPTION", "QTY SOLD", "QVC Item Cost", "Cost Paid to Vendor", "Total Paid to Tri-Pac", "Total Paid to Vendor" };
+            foreach (var item in headers)
+            {
+                ws.Cell(4, ++colIndex).Value = item;
+                ws.Cell(4, colIndex).Style.Font.Bold = true;
+            }
+
+            // vendor products
+            int rowIndex = 4;
+            foreach (var item in records)
+            {
+                if (item.Skn == "A333065")
+                    colIndex = 0;
+
+                colIndex = 0;
+
+                ws.Cell(++rowIndex, ++colIndex).SetValue(item.Skn);
+                ws.Cell(rowIndex, ++colIndex).SetValue(item.VendorSku);
+                ws.Cell(rowIndex, ++colIndex).SetValue(item.Description);
+                ws.Cell(rowIndex, ++colIndex).Value = item.UnitsShipped;
+
+                ws.Cell(rowIndex, ++colIndex).Value = item.ItemCost;
+                ws.Cell(rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+
+                ws.Cell(rowIndex, ++colIndex).Value = item.PaidToVendor;
+                ws.Cell(rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+
+                var cellWithFormula = ws.Cell(rowIndex, ++colIndex);
+                cellWithFormula.FormulaR1C1 = "RC[-3]*RC[-2]";
+                ws.Cell(rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+
+                cellWithFormula = ws.Cell(rowIndex, ++colIndex);
+                cellWithFormula.FormulaR1C1 = "RC[-4]*RC[-2]";
+                ws.Cell(rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+            }
+
+            ws.Columns().AdjustToContents();
+            wb.SaveAs(string.Format("{0}\\{1}_{2}.xlsx", dbPath, vendor, fileDate));
         }
     }
 }
