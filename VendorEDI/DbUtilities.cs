@@ -18,6 +18,7 @@ namespace VendorEDI
 
         private const int INSERT_COUNT_THRESHOLD = 100;
         private const string DB_FILENAME = "VendorEDI.sqlite";
+        private const string MONEY_FORMAT = "#,##0.00";
         private static readonly string DATA_LEAD = AppSettings.Get<string>("data.lead");
         private static readonly Regex rgx = new Regex("[^a-zA-Z0-9]");
 
@@ -70,6 +71,16 @@ namespace VendorEDI
         private decimal FromMoney(long value)
         {
             return (decimal)value / 100m;
+        }
+
+        private string IndexToXL(int row, int col, IXLWorksheet ws)
+        {
+            return ws.Cell(row, col).Address.ToString();
+        }
+
+        private string SumFormulaToXL(int r1, int c1, int r2, int c2, IXLWorksheet ws)
+        {
+            return string.Format(@"=SUM({0}:{1})", IndexToXL(r1, c1, ws), IndexToXL(r2, c2, ws));
         }
 
         private void InitializeFileInfo(string fileName)
@@ -232,7 +243,7 @@ namespace VendorEDI
                 }
             }
 
-            ws.Range(2, 10, rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+            ws.Range(2, 10, rowIndex, colIndex).Style.NumberFormat.Format = MONEY_FORMAT;
 
             // Prepare the style for the titles
             var titlesStyle = wb.Style;
@@ -260,7 +271,7 @@ namespace VendorEDI
             List<VendorItem> records;
 
             using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (TextReader reader = new StreamReader(stream))
+            using (TextReader reader = new StreamReader(stream, Encoding.GetEncoding(1252)))
             {
                 var csv = new CsvReader(reader);
                 csv.Configuration.HasHeaderRecord = true;
@@ -283,7 +294,8 @@ namespace VendorEDI
                     IQueryable<AccountsPayable> units = null;
                     if (item.IsDuplicateSkn)
                     {
-                        units = db.AccountsPayable.Where(r => r.SknId == item.Skn && r.VendorSkuCodeClean == AlphaNumericOnly(item.VendorSku));
+                        string sku = AlphaNumericOnly(item.VendorSku);
+                        units = db.AccountsPayable.Where(r => r.SknId == item.Skn && r.VendorSkuCodeClean == sku);
                     }
                     else
                     {
@@ -319,22 +331,25 @@ namespace VendorEDI
 
             ws.Cell(2, 2).Value = vendor;
 
+            IXLCell cell;
+
             // column headers
+
             int colIndex = 0;
             var headers = new List<string> { "SKN#", "VENDOR SKU", "DESCRIPTION", "QTY SOLD", "QVC Item Cost", "Cost Paid to Vendor", "Total Paid to Tri-Pac", "Total Paid to Vendor" };
             foreach (var item in headers)
             {
-                ws.Cell(4, ++colIndex).Value = item;
-                ws.Cell(4, colIndex).Style.Font.Bold = true;
+                cell = ws.Cell(4, ++colIndex);
+                cell.Value = item;
+                cell.Style.Font.Bold = true;
+                cell.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
             }
 
             // vendor products
+
             int rowIndex = 4;
             foreach (var item in records)
             {
-                if (item.Skn == "A333065")
-                    colIndex = 0;
-
                 colIndex = 0;
 
                 ws.Cell(++rowIndex, ++colIndex).SetValue(item.Skn);
@@ -342,20 +357,82 @@ namespace VendorEDI
                 ws.Cell(rowIndex, ++colIndex).SetValue(item.Description);
                 ws.Cell(rowIndex, ++colIndex).Value = item.UnitsShipped;
 
-                ws.Cell(rowIndex, ++colIndex).Value = item.ItemCost;
-                ws.Cell(rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+                cell = ws.Cell(rowIndex, ++colIndex);
+                cell.Value = item.ItemCost;
+                cell.Style.NumberFormat.Format = MONEY_FORMAT;
 
-                ws.Cell(rowIndex, ++colIndex).Value = item.PaidToVendor;
-                ws.Cell(rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+                cell =  ws.Cell(rowIndex, ++colIndex);
+                cell.Value = item.PaidToVendor;
+                cell.Style.NumberFormat.Format = MONEY_FORMAT;
 
-                var cellWithFormula = ws.Cell(rowIndex, ++colIndex);
-                cellWithFormula.FormulaR1C1 = "RC[-3]*RC[-2]";
-                ws.Cell(rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+                cell = ws.Cell(rowIndex, ++colIndex);
+                cell.FormulaR1C1 = "RC[-3]*RC[-2]";
+                cell.Style.NumberFormat.Format = MONEY_FORMAT;
 
-                cellWithFormula = ws.Cell(rowIndex, ++colIndex);
-                cellWithFormula.FormulaR1C1 = "RC[-4]*RC[-2]";
-                ws.Cell(rowIndex, colIndex).Style.NumberFormat.Format = "#,##0.00";
+                cell = ws.Cell(rowIndex, ++colIndex);
+                cell.FormulaR1C1 = "RC[-4]*RC[-2]";
+                cell.Style.NumberFormat.Format = MONEY_FORMAT;
             }
+
+            // totals
+
+            cell =  ws.Cell(++rowIndex, 1);
+            cell.Value = "TOTALS";
+            ws.Cell(rowIndex, 1).Style.Font.Bold = true;
+            cell.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+
+            ws.Cell(rowIndex, 2).Style.Border.TopBorder = XLBorderStyleValues.Medium;
+            ws.Cell(rowIndex, 3).Style.Border.TopBorder = XLBorderStyleValues.Medium;
+
+            cell = ws.Cell(rowIndex, 4);
+            cell.FormulaA1 = SumFormulaToXL(5, 4, rowIndex - 1, 4, ws);
+            cell.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+
+            ws.Cell(rowIndex, 5).Style.Border.TopBorder = XLBorderStyleValues.Medium;
+            ws.Cell(rowIndex, 6).Style.Border.TopBorder = XLBorderStyleValues.Medium;
+
+            cell = ws.Cell(rowIndex, 7);
+            cell.FormulaA1 = SumFormulaToXL(5, 7, rowIndex - 1, 7, ws);
+            cell.Style.NumberFormat.Format = MONEY_FORMAT;
+            cell.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+
+            cell = ws.Cell(rowIndex, 8);
+            cell.FormulaA1 = SumFormulaToXL(5, 8, rowIndex - 1, 8, ws);
+            cell.Style.NumberFormat.Format = MONEY_FORMAT;
+            cell.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+
+            // returns
+
+            rowIndex += 2;
+
+            for (int i = 1; i <= 8; i++)
+                ws.Cell(rowIndex, i).Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+
+            cell = ws.Cell(rowIndex, 1);
+            cell.Value = "RETURNS";
+            cell.Style.Font.Bold = true;
+
+            // total returns
+
+            int gap = 8;
+            rowIndex += gap;
+
+            for (int i = 1; i <= 8; i++)
+                ws.Cell(rowIndex, i).Style.Border.TopBorder = XLBorderStyleValues.Medium;
+
+            cell = ws.Cell(rowIndex, 1);
+            cell.Value = "TOTAL RETURNS";
+            cell.Style.Font.Bold = true;
+
+            cell = ws.Cell(rowIndex, 7);
+            cell.FormulaA1 = SumFormulaToXL(rowIndex - gap + 1, 7, rowIndex - 1, 7, ws);
+            cell.Style.NumberFormat.Format = MONEY_FORMAT;
+            cell.Style.Border.TopBorder = XLBorderStyleValues.Medium;
+
+            cell = ws.Cell(rowIndex, 8);
+            cell.FormulaA1 = SumFormulaToXL(rowIndex - gap + 1, 8, rowIndex - 1, 8, ws);
+            cell.Style.NumberFormat.Format = MONEY_FORMAT;
+            cell.Style.Border.TopBorder = XLBorderStyleValues.Medium;
 
             ws.Columns().AdjustToContents();
             wb.SaveAs(string.Format("{0}\\{1}_{2}.xlsx", dbPath, vendor, fileDate));
